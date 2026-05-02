@@ -11,11 +11,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, "data.json");
 
+// Enable CORS for all origins
 app.use(cors());
+
+// Parse JSON bodies
 app.use(express.json());
 
-// Load data
+// ---- LOAD DATA (with no caching) ----
 app.get("/data", (req, res) => {
+  // Prevent browsers from caching the response
+  res.setHeader("Cache-Control", "no-store");
+
   try {
     const raw = fs.readFileSync(DATA_FILE, "utf8");
     const json = JSON.parse(raw || "{}");
@@ -26,11 +32,14 @@ app.get("/data", (req, res) => {
   }
 });
 
-// Save data
+// ---- SAVE DATA ----
 app.post("/data", (req, res) => {
   try {
     const body = req.body;
+
+    // Write updated data to file
     fs.writeFileSync(DATA_FILE, JSON.stringify(body, null, 2), "utf8");
+
     res.json({ ok: true });
   } catch (err) {
     console.error("Error writing data.json:", err);
@@ -38,10 +47,12 @@ app.post("/data", (req, res) => {
   }
 });
 
+// Root endpoint
 app.get("/", (req, res) => {
   res.send("MILC backend is running.");
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
