@@ -11,25 +11,21 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, "data.json");
 
-// ---- FIXED CORS CONFIG ----
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"]
-}));
-
-// Explicit preflight handler
-app.options("/data", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.sendStatus(200);
+// ---- ABSOLUTE CORS FIX ----
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
 // Parse JSON bodies
 app.use(express.json());
 
-// ---- LOAD DATA (with no caching) ----
+// ---- LOAD DATA ----
 app.get("/data", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
 
@@ -47,9 +43,7 @@ app.get("/data", (req, res) => {
 app.post("/data", (req, res) => {
   try {
     const body = req.body;
-
     fs.writeFileSync(DATA_FILE, JSON.stringify(body, null, 2), "utf8");
-
     res.json({ ok: true });
   } catch (err) {
     console.error("Error writing data.json:", err);
