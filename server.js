@@ -11,15 +11,26 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, "data.json");
 
-// Enable CORS for all origins
-app.use(cors());
+// ---- FIXED CORS CONFIG ----
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+}));
+
+// Explicit preflight handler
+app.options("/data", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.sendStatus(200);
+});
 
 // Parse JSON bodies
 app.use(express.json());
 
 // ---- LOAD DATA (with no caching) ----
 app.get("/data", (req, res) => {
-  // Prevent browsers from caching the response
   res.setHeader("Cache-Control", "no-store");
 
   try {
@@ -37,7 +48,6 @@ app.post("/data", (req, res) => {
   try {
     const body = req.body;
 
-    // Write updated data to file
     fs.writeFileSync(DATA_FILE, JSON.stringify(body, null, 2), "utf8");
 
     res.json({ ok: true });
